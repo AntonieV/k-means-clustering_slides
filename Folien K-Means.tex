@@ -1,0 +1,856 @@
+\documentclass[11pt, xcolor=dvipsnames]{beamer}
+\usepackage[latin1]{inputenc}
+\usepackage[ngerman]{babel}
+\usepackage{amsmath}
+\usepackage{lmodern} %für mathmode wichtig
+\usepackage{amsfonts}
+\usepackage{amssymb}
+\usepackage{graphicx}
+\usetheme{Madrid}
+\usepackage{textpos}
+\usepackage{tikz}
+\usepackage[section,boxed]{algorithm}
+\usepackage[boxed]{algorithm}
+\usepackage{algpseudocode}
+\usepackage{caption}
+\usepackage{tikz}
+\usepackage{subfig}
+\usepackage{color}
+\usepackage{url}                                            % %url{}-Kommando
+\usepackage{fancyhdr,float}                                 % %Kopf-/Fußzeilen
+\usepackage[round]{natbib}                                  % %Zitate
+%\usepackage{enumitem}
+\usepackage{setspace}
+\usepackage[export]{adjustbox} %Rahmen um Bilder
+%Für Präsentationsmodus
+\usepackage{hyperref}
+\hypersetup{pdfpagemode=FullScreen}
+
+\usepackage{multirow}
+
+
+%Farbe des Beamer-Themes ändern
+\usecolortheme[named=LimeGreen]{structure}
+\makeatletter
+\setbeamercolor{frametitle}{fg=black}
+\setbeamercolor{title}{fg=black}
+\setbeamercolor{palette primary}{fg=black,bg=LimeGreen!30!white} 
+\setbeamercolor{palette secondary}{fg=black,bg=LimeGreen!50!white}
+\setbeamercolor{palette tertiary}{fg=black,bg=LimeGreen }
+
+\makeatother
+
+
+
+%Beschriftung der Fußleiste der Folien anpassen - Section und Subsectiontitel müssen vor jeder Folie (vor \begin{frame}) eingefügt werden
+\makeatletter
+\setbeamertemplate{footline}
+{
+	\leavevmode%
+	\hbox{%
+		\begin{beamercolorbox}[wd=.333333\paperwidth,ht=4.25ex,dp=1ex,center]{author in head/foot}%
+			\vfill
+			\vspace{0.9ex}
+			\usebeamerfont{author in head/foot}\insertsection
+		\end{beamercolorbox}%
+		\begin{beamercolorbox}[wd=.333333\paperwidth,ht=3.25ex,dp=1ex,center]{title in head/foot}%
+			\vfill
+			\vspace{0.4ex}
+			\usebeamerfont{title in head/foot}\insertsubsection
+		\end{beamercolorbox}%
+		\begin{beamercolorbox}[wd=.333333\paperwidth,ht=2.25ex,dp=1ex,right]{date in head/foot}%
+			\vfill
+			\usebeamerfont{date in head/foot}\inserttitle\hspace*{2em}
+			\insertframenumber{} / \inserttotalframenumber\hspace*{2ex} 
+		\end{beamercolorbox}}%
+	\vskip0pt%
+}
+\makeatother
+
+\mode<presentation>
+
+\begin{document}
+
+	\author{Antonie Vietor}
+	\title{K-Means-Clustering}
+	\subtitle{Im Rahmen der Proseminar-Vortragsreihe \\ "Grundlagen des Data-Minings für strukturierte Daten" \\ Dr. Nils M. Kriege}
+	\date{5. Februar 2018}
+	\setbeamercovered{transparent}	
+	
+	%Ausschalten der Navigationssymbole
+	\setbeamertemplate{navigation symbols}{} 
+	
+	%\logo{logo text} %fuer Logo auf allen Folien
+	
+	%Logo nur für Titelseite
+	%\titlegraphic{
+	%\includegraphics[width=5cm]{tud_logo_rgb}
+	%\hspace*{6.75cm}~
+	%}
+	
+	%\institute{}
+	
+	%\subject{}
+
+	
+
+%Titlefolie	
+\begin{frame}[plain]
+	\maketitle
+	%Logo fuer Titelseite mit Positionierung oben links
+	\begin{textblock*}{4.5cm}(0cm,-7.5cm)
+	\includegraphics[width=4.5cm]{tud_logo_rgb}
+	\end{textblock*}
+
+	%Lehrstuhlbezeichnung mit Positionierung unten links
+	\begin{minipage}[b]{7cm}
+		\scriptsize
+		Fakultät für Informatik\\ 
+		Algorithm Engineering (Ls11)\\
+		Technische Universität Dortmund
+	\end{minipage} 
+
+\end{frame}
+
+%Zentrierung der Titel aller Folien
+\setbeamertemplate{frametitle}[default][center]
+
+%Folie 2
+\section{Maschinelles Lernen}
+\subsection{}
+\begin{frame}
+	\frametitle{Maschinelles Lernen}
+	\begin{block}{Überwachtes Lernen}
+		\begin{itemize}
+			\item die \textbf{Klassen} der Daten sind bereits \textbf{bekannt}
+			\item Ziel: Klassifikationsregeln aufstellen, um neue Daten in die Klassen einordnen zu können
+		\end{itemize}
+	\end{block}
+	\vspace {0.8cm}
+	\begin{block}{Unüberwachtes Lernen}
+		\begin{itemize}
+			\item die \textbf{Klassen} der Daten sind \textbf{nicht bekannt}
+			\item Ziel: Klassen mit möglichst ähnlichen Objekten sollen identifiziert werden 
+		\end{itemize}
+	\end{block}
+\end{frame}
+
+%Folie 3
+\section{Clusteringverfahren - Übersicht}
+\subsection{}
+\begin{frame}
+	\frametitle{Clusteringverfahren - Übersicht}
+	\begin{center}
+	\begin{minipage}{\linewidth}
+		\centering
+		\resizebox{12cm}{!}{
+			\begin{tikzpicture}
+			[sibling distance=25em,
+			every node/.style = {shape=rectangle, rounded corners,
+				draw, align=center,
+				top color=white, bottom color=green!20},transform shape]
+			
+			\node {\textbf {Clustering-Verfahren}}
+			child { node {partitionierende\\Verfahren} [sibling distance=10em]
+				child { node {zentrumsbasiert} [sibling distance=6em]
+					child { node {K-Center} }
+					child { node {K-Median} }
+					child { node {\textbf{K-Means}} } }  
+				child { node {dichtebasiert} }}
+			child { node {hierarchische\\Verfahren}[sibling distance=10em]
+				child { node {agglomerativ}
+					child { node {Single-Linkage\\Nearest-Neighbor} }
+					child { node {Complete-Linkage\\Farthest-Neighbour} }
+					child { node {Average-Linkage} } }
+				child { node {divisiv} } } ;   	
+			\end{tikzpicture} 
+		}
+	\end{minipage}
+	\end{center}
+
+	\begin{minipage}[b]{\linewidth}
+		\tiny
+		\hspace{8cm}
+		modifiziert nach \citep{Backh2008}
+	\end{minipage} 
+
+	%\begin{textblock*}{2cm}(5cm,0cm)
+	%	modifiziert nach \citep{Backh2008}
+	%\end{textblock*}
+	
+\end{frame}
+
+%Folie 4
+\section{Ziel und Voraussetzungen}
+\subsection{K-Means}
+\begin{frame}
+	\frametitle{K-Means}
+	\begin{block}{Ziel}
+		Für alle Cluster soll die Summe der quadratischen Abstände der Datenpunkte zu ihrem Clusterzentrum minimiert werden.
+	\end{block}
+	\vspace{0.7cm}		
+	\begin{block}{Voraussetzungen} 
+		\begin{itemize}
+			\item Anzahl der Klassen muss im Voraus bekannt sein
+			\item Daten stammen aus $ d $-dimensionalen Raum
+			\item Datensatz besteht aus sphärischen, gut abgrenzbaren Datenpunktanhäufungen				
+		\end{itemize}
+	\end{block}
+\end{frame}
+
+%Folie 5
+\section{Berechnung}
+\subsection{K-Means}
+\begin{frame}
+		\frametitle{K-Means}			
+		\begin{definition} [Summe der quadratischen Abstände \textbf{eines} Clusters]							
+			\[ J(c_{j}) = \sum_{a_{i}\in c_{j}}\|a_{i} - c_{j}\|^2 = \sum_{a_{i}\in c_{j}}d^2(a_{i},c_{j}) \]
+		\end{definition}
+		\vspace{0.2cm}	
+		\visible<2>{
+		\begin{definition} [Summe der quadratischen Abstände \textbf{aller} Cluster]
+			\[ J(C) = \sum_{j = 1}^k J(c_{j}) = \sum_{j = 1}^k\sum_{a_{i}\in c_{j}}d^2(a_{i},c_{j}) \]
+		\end{definition}
+	}
+	\begin{columns} [T]
+		{\footnotesize 		
+			\begin{column}{0.1\textwidth}
+			\end{column}			
+			\begin{column}{0.25\textwidth}
+				\vfill
+				\visible<2>{
+				$k$ \\ }
+				\visible<1->{
+				$n$ \\
+				$C=\{c_{1},...,c_{k}\}$ \\				
+				$A=\{a_{1},...a_{n}\}$ \\}				
+			\end{column}
+			\begin{column}{0.64\textwidth}
+					\vfill
+					\visible<2>{
+					Clusteranzahl \\ }
+					\visible<1->{
+					Anzahl der Datenpunkte \\
+					Menge der Vektoren der Clusterzentren \\					
+					Menge der Datenpunkte \\}					
+			\end{column}
+		}				
+		\end{columns}
+\end{frame}
+
+%Folie 6
+\section{K-Means-Basisalgorithmus nach Lloyd}
+\subsection{Basisalgorithmus}
+\begin{frame}
+	\frametitle{K-Means-Basisalgorithmus nach Lloyd}
+	\begin{columns}
+		\begin{column}{0.49\textwidth}
+			\begin{algorithm}[H] %[H] für Position, ohne funktioniert das nicht in Beamer
+				\begin{algorithmic}[1]	
+					\label{alg}
+					\renewcommand{\baselinestretch}{1.3}\normalsize		
+					\State Wähle $k$ Clusterzentren.
+					\visible<2-5>{
+					\State Ordne jeden Datenpunkt dem nächstliegenden Clusterzentrum zu.}
+					\visible<3-5>{
+					\State Bestimme das Clusterzentrum jedes Clusters erneut und ersetze die bisherigen Clusterzentren.}
+					\visible<4-5>{
+					\State Wiederhole Schritt 2 und 3 bis sich die Positionen der Clusterzentren nicht mehr ändern.}
+				\end{algorithmic}
+			\end{algorithm} 
+		\end{column}	
+		\renewcommand{\baselinestretch}{1}\normalsize
+
+		\begin{column}{0.49\textwidth}
+			\begin{figure} %[!htb] = genau hier im Text einfügen
+				%\vspace{-0.58cm}
+				%\begin{itemize} [label = {}]
+
+				\only<1>{
+					\includegraphics[width=4.0cm]{1.png}}%
+				\only<2>{				
+					\includegraphics[width=4.0cm]{2.png}}%
+				\only<3>{
+					\includegraphics[width=4.0cm]{3.png}}%
+				\only<4>{
+					\includegraphics[width=4.0cm]{4.png}}%
+				\only<5>{
+					\includegraphics[width=4.0cm]{5.png}}%	
+			\end{figure}
+		\end{column}
+	\end{columns}				
+\visible<1->{
+	\begin{textblock*}{3.5cm}(9.3cm,-0.2cm)
+		\tiny Bildquelle: \citet{jain2010}
+\end{textblock*}}
+\end{frame}
+
+%Folie 7
+\section{Lokales vs. globales Optimum}
+\subsection{Beispieldatensatz}
+\begin{frame}
+	\frametitle{Lokales vs. globales Optimum}
+	\begin{figure} 
+		\includegraphics[width = 8 cm] {StartDaten.png}	
+	\end{figure}
+	\begin{textblock*}{3cm}(9.7cm,0.1cm)
+	\tiny Bildquelle: \citet{stotz2016}
+	\end{textblock*}
+\end{frame}
+
+%Folie 8
+\section{Lokales vs. globales Optimum}
+\subsection{Basisalgorithmus nach Lloyd}
+\begin{frame}
+	\frametitle{Lokales vs. globales Optimum}	
+	\framesubtitle<1>{1. Iteration}
+	\framesubtitle<2>{2. Iteration}
+	\begin{columns}[T]
+		\centering
+		\begin{column} {0.47\textwidth}
+			\temporal<2>{	
+			\includegraphics[width=5.7cm]{ideal1.png}}
+			{\includegraphics[width=5.7cm]{ideal2.png}}
+			{}			
+		\end{column}
+	
+		\begin{column} {0.47\textwidth}
+			\temporal<2>{\includegraphics[width=5.7cm]{bad1.png}}
+			{\includegraphics[width=5.7cm]{bad2.png}}
+			{}
+		\end{column}
+	\end{columns}
+	\begin{textblock*}{3cm}(9.7cm,0.6cm)
+		\tiny Bildquelle: \citet{stotz2016}
+	\end{textblock*}
+	\begin{textblock*}{6cm}(0.3cm,0.7cm)
+		{\scriptsize \textbf{o} = Clusterzentren zu Beginn der Iteration \\ \textbf{x} = Clusterzentren am Ende der Iteration}
+	\end{textblock*}
+\end{frame}
+
+%Folie 9
+\section{Lokales vs. globales Optimum}
+\subsection{Basisalgorithmus nach Lloyd}
+\begin{frame}
+	\frametitle{Lokales vs. globales Optimum}	
+	\framesubtitle<1>{3. Iteration}
+	\framesubtitle<2>{4. Iteration}
+	\begin{columns}[T]
+		\centering
+		\begin{column} {0.47\textwidth}
+			\temporal<2>{\includegraphics[width=5.7cm]{ideal3.png}}
+			{\includegraphics[width=5.7cm]{ideal4.png}}
+			{}			
+		\end{column}
+		
+		\begin{column} {0.47\textwidth}
+			\temporal<2>{\includegraphics[width=5.7cm]{bad3.png}}
+			{\includegraphics[width=5.7cm]{bad4.png}}
+			{}
+		\end{column}
+	\end{columns}
+	\begin{textblock*}{3cm}(9.7cm,0.6cm)
+		\tiny Bildquelle: \citet{stotz2016}
+	\end{textblock*}
+	\begin{textblock*}{6cm}(0.3cm,0.7cm)
+		{\scriptsize \textbf{o} = Clusterzentren zu Beginn der Iteration \\ \textbf{x} = Clusterzentren am Ende der Iteration}
+	\end{textblock*}
+\end{frame}
+
+%Folie 10
+\section{Lokales vs. globales Optimum}
+\subsection{Basisalgorithmus nach Lloyd}
+\begin{frame}
+	\frametitle{Lokales vs. globales Optimum}	
+	\framesubtitle{5. Iteration}
+	\begin{columns}[T]
+		\centering
+		\begin{column} {0.47\textwidth}			
+			{\includegraphics[width=5.7cm]{ideal5.png}}
+		\end{column}
+		
+		\begin{column} {0.47\textwidth}
+			{\includegraphics[width=5.7cm]{bad5.png}}
+		\end{column}
+	\end{columns}
+	\begin{textblock*}{3cm}(9.7cm,0.6cm)
+		\tiny Bildquelle: \citet{stotz2016}
+	\end{textblock*}
+	\begin{textblock*}{6cm}(0.3cm,0.7cm)
+		{\scriptsize \textbf{o} = Clusterzentren zu Beginn der Iteration \\ \textbf{x} = Clusterzentren am Ende der Iteration}
+	\end{textblock*}
+\end{frame}
+
+%Folie 11
+\section{Optimale Clusteranzahl}
+\subsection{Basisalgorithmus nach Lloyd}
+\begin{frame}
+	\frametitle{Die optimale Clusteranzahl $k$ bestimmen}
+	\vspace{-0.3cm}
+	\begin{itemize}
+		\begin{block}{Clusterradius}
+			Maximale Distanz zwischen den Punkten eines Clusters und dem Clusterzentrum.
+		\end{block}		
+		\item[]<2->
+		\onslide<2-3>
+		\begin{block}{Clusterdurchmesser}
+			Maximale Distanz zwischen zwei Punkten eines Clusters.
+		\end{block}
+		\vspace{-0.2cm}		
+		\item[]<3> 
+		\onslide<3>
+		\begin{block}{}
+			\begin{itemize}{\normalsize
+				\item Solange $k$ der tatsächlichen Clusteranzahl entspricht, verändern sich Clusterradius bzw. -durchmesser nur geringfügig beim Hinzufügen von weiteren Punkten.
+				\item Werden zwei Cluster zusammengefasst, die nicht zueinander passen, dann kommt es zu einem deutlichen Anstieg des Clusterradius bzw. -durchmessers.}
+			\end{itemize}
+		\end{block}
+	\end{itemize}
+
+\end{frame}
+
+%Folie 12
+\section{Optimale Clusteranzahl}
+\subsection{Basisalgorithmus nach Lloyd}
+\begin{frame}
+	\frametitle{Die optimale Clusteranzahl $k$ bestimmen}
+	\begin{block}{}
+		\begin{itemize}
+			\item wiederholte Messungen unter Beobachtung von Clusterradius oder -durchmesser
+			\item effektiv ist die Wahl von Zweierpotenzen für $k$ bis sich Clusterradius oder -durchschnitt nur noch geringfügig verändern
+			\item weitere Eingrenzung des Intervalls kann dann durch binäre Aufteilungen (binäre Suche) erfolgen
+		\end{itemize}
+	\end{block}
+	\begin{figure}
+		\centering
+		\vspace{-0.19cm}
+		\includegraphics[width=6.223cm, height = 4.4 cm] {optClustAnz.png} 
+	\end{figure}
+\end{frame}
+
+%Folie 13
+\section{Eigenschaften und Voraussetzungen}
+\subsection{BFR-Algorithmus}
+\begin{frame}
+\frametitle{BFR-Algorithmus}
+\framesubtitle{(nach Bradley, Fayyad und Reina)}
+\begin{block}{Eigenschaften}
+	\begin{itemize}
+		\item für multivariate Daten geeignet
+		\item für Big Data geeignet
+	\end{itemize}
+\end{block}
+\vfill
+\begin{block}{Voraussetzungen}
+	\begin{itemize}
+		\item die Daten müssen aus dem \textbf{mehrdimensionalen} Raum stammen
+		\item in jeder Dimension \textbf{Normalverteilung} der Datenpunkte um die Clusterzentren herum 
+	\end{itemize}
+\end{block}
+\end{frame}
+
+
+%Folie 14
+\section{Initialisierung}
+\subsection{BFR-Algorithmus}
+\begin{frame}
+	\frametitle{Initialisierung}
+	\begin{block}{}
+		\begin{enumerate}[\begingroup\color{black} 1\endgroup]
+			{\setlength{\itemindent}{1.5em}
+			\item initiale Auswahl einer optimalen Anzahl von $k$ Punkten
+			\visible<2->{
+			\onslide <2->{
+			\item zufällige Aufteilung der Daten in mehrere Stichproben
+			}}
+			\visible<3->{
+			\onslide <3->{
+			\item anlegen von drei Daten-Sets:
+			}}
+		}
+	\vfill	
+	
+			\begin{itemize}
+		\setlength{\leftskip}{0.5cm}{
+				{\normalsize 
+				\visible<4->{
+				\onslide <4->{
+				\item Discard Set (\textbf{DS})
+				\vspace{0.2cm}
+				\item Compressed Set (\textbf{CS})
+				\vspace{0.2cm}
+				\item Retained Set (\textbf{RS})}
+				}
+			}
+		}
+			\end{itemize}
+		\end{enumerate}
+	\end{block}
+\end{frame}
+
+
+%Folie 15
+\section{Initialisierung}
+\subsection{BFR-Algorithmus}
+\begin{frame}
+	\frametitle{Daten-Sets}
+\begin{block}{}
+	\begin{itemize}
+		{\normalsize 
+		\item \textbf{DS (Discard Set)}: \\ $\Rightarrow$ repräsentiert die eigentlichen \textbf{Cluster} \\ 
+		Für Punkte, die nahe genug an einem der $ k $ Clusterzentren liegen.
+		
+		\visible<2-> {
+		\onslide <2->{
+		\item \textbf{CS (Compressed Set)}: \\ $\Rightarrow$ repräsentiert zusätzliche \textbf{Minicluster} \\ 
+		Für Gruppen von nahe bei einander liegenden Punkten, die nicht nahe genug an einem der Clusterzentren liegen, um diesem zugeordnet zu werden.
+		}}
+		\visible<3>{
+		\onslide <3>{
+		\item \textbf{RS (Retained Set)}: \\ $\Rightarrow$ repräsentiert \textbf{isolierte Datenpunkte} \\ 
+		Für Datenpunkte, die weder nahe genug an den Clusterzentren des CS noch an denen des DS liegen.
+		}}}
+		\end{itemize}
+\end{block}
+\end{frame}
+
+%Folie 16
+\section{Datenanalyse}
+\subsection{BFR-Algorithmus}
+\begin{frame}
+	\frametitle{Datenanalyse}
+	\begin{block}{}
+		Für jedes DS und CS werden folgende Daten gespeichert:
+		\begin{itemize}
+			\item \textbf{\textit{N}}: Anzahl der Datenpunkte
+			\visible<2->{
+			\item \textbf{\textit{SUM}}: Vektor, dessen Elemente jeweils die Summe der Koordinaten einer Dimension von allen Punkten des Clusters repräsentieren. \\}
+			\visible<3->{
+			\item \textbf{\textit{SUMSQ}}: Vektor, dessen Elemente jeweils die Summe der Koordinatenquadrate einer Dimension von allen Punkten des Clusters repräsentieren. }
+		\end{itemize}
+		\vspace{0.5cm}
+		\visible<4->{
+		\textbf{Beispiel:} \\}
+		\vspace{-1cm}
+		\begin{equation*}
+		\visible<4->{
+		a=\left( \begin{array}{c}{a_{1}} \\{a_{2}}\end{array}\right), \,\, b=\left( \begin{array}{c}{b_{1}} \\ {b_{2}}\end{array}\right) \qquad
+		\begin{aligned}}
+		\visible<5->{
+		&\Rightarrow  N=2 \\}
+		\visible<6->{
+		&\Rightarrow SUM=\left( \begin{array}{c}{a_{1}+b_{1}} \\  {a_{2}+b_{2}}\end{array}\right) \\}
+		\visible<7>{
+		&\Rightarrow SUMSQ=\left( \begin{array}{c}{a_{1}\,^2+b_{1}\,^2} \\  {a_{2}\,^2+b_{2}\,^2}\end{array}\right) \\}
+		\end{aligned}
+		\end{equation*}
+	\end{block}
+\end{frame}
+
+%Folie 17
+\section{Datenanalyse}
+\subsection{BFR-Algorithmus}
+\begin{frame}
+	\frametitle{Datenanalyse}
+	Aus $N$, $SUM$ und $SUMSQ$ können die Koordinaten des Clusterzentrums und die Standardabweichung berechnet werden:
+	\visible<2->{
+	\begin{block}{Clusterzentrum}
+		Die $i$-te Koordinate des Clusterzentrums ergibt sich aus den Mittelwerten der Datenpunktkoordinaten:
+		\[\frac{SUM_{i}}{N} \]
+	\end{block}}
+	\visible<3->{
+	\begin{block}{Standardabweichung}
+		Die Varianz $v$ in der $i$-ten Dimension kann aus den $SUM$- und $SUMSQ$-Vektoren ermittelt werden:
+		\[ v_{i} = \frac{SUMSQ_{i}}{N}-\left(\frac{SUM_{i}}{N}\right)^2 \] 
+		Daraus ergibt sich die Standardabweichung $s_{i} = \sqrt{v_{i}}$ 
+	\end{block}	}
+\end{frame}
+
+%Folie 18
+\section{Datenanalyse}
+\subsection{BFR-Algorithmus}
+\begin{frame}
+	\frametitle{Datenanalyse}
+	\visible<1-3>{
+	Warum entsprechen die Koordinaten des Clusterzentrums den Mittelwerten der Datenpunktkoordinaten? \\ }
+	\visible<2-3>{
+	\vfill
+	Seien die Koordinaten eines Clusterzentrums $ c $ also:
+	\[c = \frac{1}{n}\sum_{i = 1}^n a_{i} = \bar a\]}
+	\vfill
+	\visible<3>{Dann gilt für die Summe der quadratischen Abstände aller  Punkte $a_{i}$ eines Clusters zu einem Punkt $x$: \\
+	\[\sum_{i = 1}^n |a_{i} - x|^2\]}
+	
+	\vspace{-8cm}
+	\begin{flalign*} %ermöglicht untereinanderstehende Struktur, z.B. der "="-Zeichen
+	\visible<4->{
+	\sum_{i = 1}^n |a_{i} - x|^2 }
+	\visible<5->{
+	& = \sum_{i = 1}^n |a_{i} - c + c - x|^2 \\ }
+	\visible<6->{
+	& = \sum_{i = 1}^n |a_{i} - c|^2 + 2(c - x)\cdot \sum_{i = 1}^n (a_{i} - c ) + \sum_{i = 1}^n |c - x|^2 \\ }
+	\visible<7->{
+	&= \sum_{i = 1}^n |a_{i} - c|^2 + 2(c - x)\cdot \sum_{i = 1}^n (a_{i} - \bar a ) + n|c - x|^2 \\ }
+	\visible<8->{
+	& = \sum_{i = 1}^n |a_{i} - c|^2 + 2(c - x)\cdot 0 + n|c - x|^2 \\ }
+	\visible<9->{
+	& = \sum_{i = 1}^n |a_{i} - c|^2 + n|c - x|^2 }
+	\end{flalign*}
+	\visible<10>{$\Rightarrow$ ist genau dann minimal, wenn $x=c$ und die Koordinaten von $c$ den \textbf{Mittelwerten} der Datenpunktkoordinaten entsprechen.}
+\end{frame}
+
+%Folie 19
+\section{Datenanalyse}
+\subsection{BFR-Algorithmus}
+\begin{frame}
+	\frametitle{}
+	\vspace{-0.9cm}
+	\begin{textblock}{0}(3,-4.5)
+		\only<1>{
+		\includegraphics[width=9cm]{bfr1.png}}%
+	\end{textblock}
+	\begin{textblock}{0}(3,-4.5)
+		\only<2>{
+		\includegraphics[width=9cm]{bfr2.png}}%
+	\end{textblock}
+	\begin{textblock}{0}(3,-4.5)
+		\only<3>{
+		\includegraphics[width=9cm]{bfr3.png}}%
+	\end{textblock}
+	\begin{textblock}{0}(3,-4.5)
+		\only<4>{
+		\includegraphics[width=9cm]{bfr4.png}}%
+	\end{textblock}
+	\begin{textblock}{0}(3,-4.5)
+		\only<5>{
+		\includegraphics[width=9cm]{bfr5.png}}%
+	\end{textblock}
+	\begin{textblock}{0}(3,-4.5)
+		\only<6>{
+		\includegraphics[width=9cm]{bfr6.png}}%
+	\end{textblock}
+	\begin{textblock}{0}(3,-4.5)
+		\only<7>{
+		\includegraphics[width=9cm]{bfr7.png}}%
+	\end{textblock}
+	\begin{textblock}{0}(3,-4.5)
+		\only<8>{
+		\includegraphics[width=9cm]{bfr8.png}}%
+	\end{textblock}
+	\begin{textblock}{0}(3,-4.5)
+		\only<9>{
+		\includegraphics[width=9cm]{bfr9.png}}%
+	\end{textblock}
+\end{frame}
+
+%Folie 20
+\section{Aktualisierung}
+\subsection{BFR-Algorithmus}
+\begin{frame}
+\frametitle{Aktualisierung der Metadaten}
+\begin{block}{}
+	\vspace{0.8cm}
+	Hinzufügen eines neuen Datenpunktes zu einem \textbf{DS} oder \textbf{CS}:
+	\begin{itemize}
+		\visible<2->{
+			\item Erhöhen der Anzahl der Datenpunkte $\Rightarrow$ $N+1$}
+		\visible<3->{
+			\item Koordinaten des Punktes zum SUM-Vektor addieren}
+		\visible<4->{
+			\item Quadrate der Punktkoordinaten zum SUMSQ-Vektor addieren}
+	\end{itemize}
+	\vspace{0.8cm}
+	\visible<5->{
+		Hinzufügen eines neuen Datenpunktes zum \textbf{RS}:}
+	\begin{itemize}
+		\visible<6->{
+			\item[] $\Rightarrow$ der Datenpunkt selbst wird gespeichert}
+	\end{itemize}
+	\vspace{0.8cm}
+\end{block}
+
+\end{frame}
+
+%Folie 21
+\section{Zuordnung}
+\subsection{BFR-Algorithmus}
+\begin{frame}
+\frametitle{Zuordnung der Punkte zu den Datensets}
+	\begin{block}{}
+		\begin{enumerate}[\begingroup\color{black} 1\endgroup]
+			{\setlength{\itemindent}{1.5em}
+			\vspace{0.4cm}
+			\item Punkt liegt nahe genug an einem Clusterzentrum (DS oder CS)
+			\item[] $\Rightarrow$ Zuordnung zum DS bzw. CS
+			\vspace{0.4cm}
+			\visible<2->{
+			\item Punkt liegt nicht nahe genug an einem Clusterzentrum:}
+			\hspace{0.2cm}
+			\begin{itemize}	
+ 				 \setlength{\itemsep}{1pt}			
+				{\normalsize 				
+				\vspace{0.15cm}
+				\visible<3->{
+				\item Punkt liegt nahe genug bei anderen Punkten des RS:}
+			\visible<4->{
+				\item[] $\quad\Rightarrow$ zu neuem CS zusammenfassen und aus dem RS löschen}
+				\visible<5->{
+				\item[] $\quad\Rightarrow$ ggf. neues CS mit bereits vorhandenen CS zusammenfassen}
+				\vspace{0.15cm}
+				\visible<6->{
+				\item Datenpunkt liegt isoliert:
+				\item[] $\quad\Rightarrow$ Punkt im RS speichern}
+					}
+			\end{itemize}
+		}
+			\vspace{0.4cm} 
+		\end{enumerate}
+	\end{block}
+\end{frame}
+
+%Folie 22
+\section{Abschließende Zuordnung}
+\subsection{BFR-Algorithmus}
+\begin{frame}
+	\frametitle{Abschließende Zuordnung der Datensets}
+{\large \textbf{Was passiert mit den CS und RS, nachdem alle Datenpunkte einem Set zugewiesen wurden?}}
+	\vspace{0.3cm}
+		\begin{itemize}
+			\visible<2->{
+			\item alle CS und alle Punkte des RS dem nächsten DS-Clusterzentrum zuweisen}
+			\vspace{0.2cm}
+			\visible<3->{
+			\item Punkte des RS als Ausreißer behandeln}
+			\vspace{0.2cm}
+			\visible<4->{
+			\item CS als separate Minicluster behandeln}
+		\end{itemize}		
+\end{frame}
+
+%Folie 23
+\section{Distanzmaß}
+\subsection{BFR-Algorithmus}
+\begin{frame}[t]
+\strut
+	\frametitle{Distanzmaß}
+		\vspace{-0.8cm}
+	\begin{center}
+		{\large \textbf{Wann liegt ein Punkt nahe genug an einem Clusterzentrum?}}%
+	\end{center}
+
+		\begin{enumerate}[\begingroup\color{black} 1\endgroup]
+			\temporal<4>{
+			\item Jedes DS und CS enthält:%
+			\begin{itemize}
+				{\normalsize 				
+				\item Koordinaten des Clusterzentrums $c = (c_{1},...,c_{d})$
+				\item Standardabweichungen für jede Dimension $s = (s_{1},...,s_{d})$}%
+				\end{itemize}}
+			{\item Metadaten liefern Clusterzentren und Standardabweichungen}%
+			{\item Metadaten liefern Clusterzentren und Standardabweichungen}%	
+		\vspace{0.5 cm}
+		\temporal<2-3>{				
+			\par			
+			\textcolor{white}{Normalisierte (euklidische) Distanz $z$ für jede Dimension $i$:
+			\[z_{i} = \frac{a_{i}-c_{i}}{s_{i}}   \textcolor{white}{=\frac{s_{i}}{s_{i}} = 1}\]}}%
+		{
+			\par
+			\item Normalisierte (euklidische) Distanz $z$ für jede Dimension $i$:
+			\[\;\;\;\;\;\;\;\;\;\;\;\;\;z_{i} = \frac{a_{i}-c_{i}}{s_{i}}   \textcolor{white}{=\frac{s_{i}}{s_{i}} = 1}\]}%
+		{			
+			\par
+			\item $a_{i}$ liegt in jeder Dimension genau die \textcolor{blue}{\textbf{einfache Standardabweichung}} vom Clusterzentrum entfernt:
+			\[z_{i} = \frac{a_{i}-c_{i}}{s_{i}}  \textcolor{blue}{=\frac{s_{i}}{s_{i}} = 1}\]}%
+		\temporal<3-4>{
+			\textcolor{white}{\textbf{Mahalanobis-Distanz}:
+			\[MD = \sqrt{\sum_{i=1}^{d} z_{i}^2 } \textcolor{white}{=\sqrt{\sum_{i=1}^{d} 1^2 } = \sqrt{d}}\]}}%
+			{\item \textbf{Mahalanobis-Distanz}:
+			 
+			\[\;\;\;\;\;\;\;\;\;\;\;\;\;\;\;\;\;\;\;\;\;\;\;\;\;\;MD = \sqrt{\sum_{i=1}^{d} z_{i}^2 } \textcolor{white}{=\sqrt{\sum_{i=1}^{d} 1^2 } = \sqrt{d}}\]}%
+			{\item \textbf{Mahalanobis-Distanz}:
+				\[MD = \sqrt{\sum_{i=1}^{d} z_{i}^2 } \textcolor{blue}{=\sqrt{\sum_{i=1}^{d} 1^2 } = \sqrt{d}}\]}%
+			\visible<6>{$\Rightarrow$ Grenzen für 2- bzw. 3-fache Standardabweichung: $2\sqrt{d}$ bzw. $3\sqrt{d}$}%		
+	\end{enumerate}
+\end{frame}
+
+%Folie 24
+\section{Kritische Betrachtung}
+\subsection{BFR-Algorithmus}
+\begin{frame}
+	\frametitle{Kritische Betrachtung des BFR-Algorithmus}
+	\begin{columns}[T]
+		\begin{column}{0.49\textwidth}
+			\begin{center}
+				\textbf{Vorteile}
+			\end{center}
+			\begin{itemize}
+				\item für multivariate Daten geeignet
+				\visible<2->{
+				\item keine Iteration}
+				\visible<3->{
+				\item generieren multipler Lösungen}
+				\visible<4->{
+				\item durch Metadaten geringerer Speicherplatzbedarf}
+			\end{itemize}
+		\end{column}
+		\begin{column}{0.49\textwidth}
+			\begin{center}
+				\textbf{Nachteile}
+			\end{center}
+			\begin{itemize}
+				\visible<5->{
+				\item einzelne Datenpunkte aus Metadaten nicht mehr extrahierbar}
+				\visible<6->{
+				\item für Hintergrundrauschen und Ausreißer anfällig}
+				\visible<7->{
+				\item strenges Kriterium der Normalverteilung in jeder Dimension}
+			\end{itemize}
+		\end{column}
+	\end{columns}
+\end{frame}
+
+%Folie 25
+\section{Genexpressionsanalysen}
+\subsection{Anwendungsbeispiel}
+\begin{frame}
+\frametitle{Anwendungsbeispiel: Genexpressionsanalysen}
+ 	\begin{figure} 
+		\includegraphics[width = 12 cm] {Arrays.png}	
+	\end{figure}
+\end{frame}
+
+%Folie 26
+%\section{Genexpressionsanalysen}
+%\subsection{Anwendungsbeispiel}
+%\begin{frame}
+%	\frametitle{Anwendungsbeispiel: Genexpressionsanalysen}
+%		\begin{figure} 
+%		\includegraphics[width = 12 cm] {Sarropou.png}	
+%	\end{figure}
+%	\begin{textblock*}{3.5cm}(8.7cm,-0.2cm)
+%		\tiny Bildquelle: \citet{Sarrop2014}
+%	\end{textblock*}
+%\end{frame}
+
+%Folie 27
+\section{Genexpressionsanalysen}
+\subsection{Anwendungsbeispiel}
+\begin{frame}
+\frametitle{Anwendungsbeispiel: Genexpressionsanalysen}
+	\begin{figure} 
+	\includegraphics[width = 5 cm] {Seok.png}	
+	\end{figure}
+	\begin{textblock*}{3.5cm}(8.7cm,-0.2cm)
+	\tiny Bildquelle: \citet{Seok2013}
+	\end{textblock*}
+\end{frame}
+
+%Literaturverzeichnis
+\begin{frame}%[allowframebreaks]
+	\frametitle{Bildquellen}
+	\bibliographystyle{abbrvnat}
+	\bibliography{kmeans}
+	\addcontentsline{toc}{section}{\bibname}
+\end{frame}
+
+\end{document}
